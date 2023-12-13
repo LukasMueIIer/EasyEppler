@@ -237,6 +237,19 @@ class AirFoil:
         self.transBottom[i] = cTransLower
         return 0
 
+    def visousCalc(self,amin,amax,n):
+        File = self.File
+        self.writeAlpha(onp.linspace(amin,amax,num=n))
+        File.write("RE  14     ")
+        for i in range(0,5):
+            if(self.index_transMode[i] == 0):
+                File.write("0 " + str(round(self.REs[i],0)) + " ")
+            else:
+                File.write(str(self.index_transMode[i]) + " " + str(round(self.REs[i],0)) + " ")
+        for i in range(0,4):
+            File.write(str(round(self.transTop[i])) + " " + str(round(self.transBottom[i])) + " " )
+        File.write(str(round(self.transTop[-1])) + " " + str(round(self.transBottom[-1])) + "\n" )
+        File.write("CDCL\n")    
     
     def CloseFile(self) -> int: #Finalize the File
         self.File.write("ENDE")
