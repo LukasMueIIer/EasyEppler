@@ -27,7 +27,7 @@ foil1.WriteUpperC_Alpha([0.3,0.1],[8.3,10])
 #then we say at what length the closing curve should be added (here c = 0.98 <- is a good standard value).
 #afterwards we set the shape of the curve (-1 see eppler) and strength(0.7 again see eppler)
 #the mode can be specified, but defaults to 2 if not -> see eppler user guide
-foil1.MPRUpper(0.6,0.98,-1,0.7,mode=2)
+foil1.MPRUpper(0.65,0.98,-1,0.7,mode=2)
 
 #Now we specify the shape of the ramp to smoothly go into the MPR,
 #coordinates here are a deltaC -> we want the ramp to start 0.2c infront of the MPR and end 0.05c after it
@@ -66,3 +66,6 @@ foil1.visousCalc(0,15,15)
 
 #Now we add the END line and save the file now you can use it in the eppler code
 foil1.CloseFile()
+
+foil1.ExecuteEppler()
+

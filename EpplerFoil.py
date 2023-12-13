@@ -1,5 +1,7 @@
 import numpy as onp
 
+
+
 class AirFoil:
     def __init__(self,_FileName:str,_Initials:str,_Number:int,_N:int = 60,_ZeroN = 31):
         self.N = _N #amount of points the foil has
@@ -257,3 +259,28 @@ class AirFoil:
         self.File.write("ENDE")
         self.File.close()
         return 0
+
+    def ExecuteEppler(self) -> int: #execute the Eppler Code !this requires ghost script, freePDF and propper file placement -> read in README.md
+        #only required to execute eppler
+        import os
+        from subprocess import Popen, PIPE, call
+
+        if(os.system("del druck.pdf")):
+            print("WARNING couldnt run delet command of old PDF !!!!!")
+
+        if(os.system("echo " + self.FileName + " |prehb15.exe")):
+            print("WARNING couldnt execute eppler code !!!!!")
+
+
+
+        p = Popen(['pprs.exe'], stdout=PIPE, stdin=PIPE, stderr=PIPE)
+        command = "N\n0\n1\n-1"
+        stdout_data = p.communicate(input=command.encode('utf-8'))[0]
+        print(stdout_data)
+
+        if(os.system("move druck druck.ps")):
+            print("WARNING couldnt coppy and rename file !!!!!")
+
+        if(os.system("ps2pdf druck.ps druck.pdf")):
+            print("WARNING couldnt convert to PDF !!!!!")
+        os.system("druck.pdf")
