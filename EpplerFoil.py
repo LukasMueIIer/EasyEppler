@@ -80,10 +80,12 @@ class AirFoil:
         else:
             File.write(" " + str(round(nue[-1],1)) + " " + str(round(a[-1],1)))
             File.write(" " + str(round(0,1)) + " " + str(round(a[-1],1)))  #we need a zero entrie
+            print("WARNING Zero entrie was automatticaly added")
         File.write("\n")
         return 0
     
-    def WriteLowerC_Alpha(self,c,a) -> int: #writes an array of cpositions and their respektive alpha where they should be constant to TRA1 Line
+    def WriteLowerC_Alpha(self,c,a,midSnap = 1) -> int: #writes an array of cpositions and their respektive alpha where they should be constant to TRA1 Line
+        #Mid snap moves points to the closest .5 number accodring to Eppler this yeilds smother Airfoils
         #convert c's to nues and check that they increase monotonically
         nue = c
         nuebefore = -0.001
@@ -109,7 +111,7 @@ class AirFoil:
             File.write(" " + str(round(nue[i],1)) + " " + str(round(a[i],1))) 
 
         #check for last digit
-        if(self.N - nue[-1] < 0.3):
+        if(self.N - nue[-1] < 0.51):
             File.write(" " + str(round(self.N,1)) + " " + str(round(a[-1],1)))
         else:
             File.write(" " + str(round(nue[-1],1)) + " " + str(round(a[-1],1)))
