@@ -1,5 +1,6 @@
 # EasyEppler
- Scripts and tools to make using the Eppler Code easier and less error prone, plus enabling automization
+Scripts and tools to make using the Eppler Code easier and less error prone, plus enabling automization
+The Eppler Code is NOT part of this, since it does not belong to me in any way
 
 ## Content
 ### EpplerFoil.py 
