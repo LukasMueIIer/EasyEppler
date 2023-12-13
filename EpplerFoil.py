@@ -13,6 +13,12 @@ class AirFoil:
         self.dc_Back_Up = 0
         self.dc_Front_Low = 0
         self.dc_Back_Low = 0
+        
+        self.index_RE = 0
+        self.REs = onp.zeros(5) #RE numbers for visous calculations
+        self.index_transMode = onp.zeros(5)
+        self.transTop = onp.zeros(5)
+        self.transBottom = onp.zeros(5)
     
     def CtoNUpper(self,c:float) -> float: #converts a chord position on the upper side to N
         if(c == 0):
@@ -208,6 +214,29 @@ class AirFoil:
 
     def invisidCalc(self,lowAlpha,upAlpha,n):   #invicid calc with range and number of points as input
         return self.inviscidCalc_Custom(onp.linspace(lowAlpha,upAlpha,num=n))
+
+    def inviscidCalc_byIncrements(self,a0,da,n): #creates n points starting at a0 increasing by da
+        x = onp.zeros(n)
+        for i in range(0,n):
+            x[i] = a0 + da * i
+        return self.inviscidCalc_Custom(x)
+
+    def naturalTransitionCalc(self,RE): #BL calculation with natural transition
+        i = self.index_RE
+        self.index_RE = i + 1
+        self.REs[i] = RE #RE numbers for visous calculations
+        self.index_transMode[i] = 3.01
+        return 0
+
+    def forcedTransitionCalc(self,RE,cTransUpper,cTransLower): #BL calculation with forced transition
+        i = self.index_RE
+        self.index_RE = i + 1
+        self.REs[i] = RE #RE numbers for visous calculations
+        self.index_transMode[i] = 1.01
+        self.transTop[i] = cTransUpper
+        self.transBottom[i] = cTransLower
+        return 0
+
     
     def CloseFile(self) -> int: #Finalize the File
         self.File.write("ENDE")

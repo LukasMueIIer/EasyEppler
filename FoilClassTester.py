@@ -21,7 +21,8 @@ foil1.RampLower(0.2,0.05)
 foil1.writeMPR("upper",0.4,0)
 
 #Calculations
-foil1.invisidCalc(0,15,5)
+#foil1.invisidCalc(0,15,5)
+foil1.inviscidCalc_byIncrements(0,3,5)
 
 
 foil1.CloseFile()
