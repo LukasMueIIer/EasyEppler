@@ -71,7 +71,7 @@ class AirFoil:
         
         for i in range(0,len(c)-1):
             if(i > 5):
-                if((i % 10) == 0):
+                if((i % 6) == 0):
                     File.write("\n")
                     File.write("TRA1" + " " + " " + str(self.Number).zfill(4)) #begin new TraLine we dont want more than 10 entries
             File.write(" " + str(round(nue[i],1)) + " " + str(round(a[i],1))) 
@@ -281,6 +281,8 @@ class AirFoil:
         if(os.system("move druck druck.ps")):
             print("WARNING couldnt coppy and rename file !!!!!")
 
-        if(os.system("ps2pdf druck.ps druck.pdf")):
+        from datetime import datetime
+        filename = f'{datetime.now():%Y_%m_%d_%H_%M_%S%z}'
+        if(os.system("ps2pdf druck.ps " + filename + ".pdf")):
             print("WARNING couldnt convert to PDF !!!!!")
-        os.system("druck.pdf")
+        os.system(filename + ".pdf")
