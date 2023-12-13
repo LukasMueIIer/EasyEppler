@@ -4,7 +4,7 @@ import numpy as np
 
 
 foil1 = EpplerFoil.AirFoil("entwurf.dat","LM",187) #create Foil Handle
-
+ 
 foil1.BeginnFile()  #start writing to file
 
 #Set Upper Side
@@ -21,6 +21,7 @@ foil1.RampLower(0.2,0.05)
 foil1.writeMPR("upper",0.4,0)
 
 #Calculations
+foil1.invisidCalc(0,15,5)
 
 
 foil1.CloseFile()

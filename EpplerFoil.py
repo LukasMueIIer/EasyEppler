@@ -193,6 +193,21 @@ class AirFoil:
         self.dc_Front_Low = dc_front
         self.dc_Back_Low = dc_back
         return 0
+
+    def writeAlpha(self,alpha): #prints the ALFA command
+        File = self.File
+        File.write("ALFA     1 ")
+        for i in range(0,len(alpha) - 1):
+            File.write(str(round(alpha[i],1)) + " ")
+        File.write(str(round(alpha[-1],1)) + "\n")
+
+    def inviscidCalc_Custom(self,alphas) -> int:   #invicid calculation with array as alpha input
+        self.writeAlpha(alphas)
+        self.File.write("DIAG\n")
+        return 0
+
+    def invisidCalc(self,lowAlpha,upAlpha,n):   #invicid calc with range and number of points as input
+        return self.inviscidCalc_Custom(onp.linspace(lowAlpha,upAlpha,num=n))
     
     def CloseFile(self) -> int: #Finalize the File
         self.File.write("ENDE")
