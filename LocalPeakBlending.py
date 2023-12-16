@@ -9,26 +9,26 @@ import EpplerFoil
 lamBottom = 0.3 #Ca at which the bottom surface should be laminar
 lamLengthBottom = 0.7 #position where MPR starts at bottom -> lower end of bucket
 #Ramp Bottom Side against lam seperation
-blendingLamBottom = 0.5 #reach of ramp into lam area -> increase when laminar separation occurs at MPR
-blendingMPRBottom = 0.1 #ramp into MPR -> to combat laminar separation 
+blendingLamBottom = 0.05 #reach of ramp into lam area -> increase when laminar separation occurs at MPR
+blendingMPRBottom = 0.01 #ramp into MPR -> to combat laminar separation 
 #MPR bottom side 
 shapeMPRBottom = 0.23
 strengthMPRBottom = 0.7
 
 ##Top Side
 lamTop = 0.9 #Target Ca for laminar flow at Top -> upper end of bucket
-lamLengthTop = 0.7 #laminar length
+lamLengthTop = 0.6 #laminar length
 #Ramp Top Side against lam seperation
-blendingLamTop = 0.5 #reach of ramp into lam area -> increase when laminar separation occurs at MPR
-blendingMPRTop = 0.1 #ramp into MPR -> to combat laminar separation 
+blendingLamTop = 0.05 #reach of ramp into lam area -> increase when laminar separation occurs at MPR
+blendingMPRTop = 0.01 #ramp into MPR -> to combat laminar separation 
 #MPR Top side 
 shapeMPRTop = -1
 strengthMPRTop = 0.7
 #alpah* increase against suction peak -> increases alpha* smothly (according to a polynom) towards the LE to combat suction peaks
-alphaLE = 20 #the alpha* we will have at the LE
-startIncrease = 0.3  #the c at which the increase starts
+alphaLE = 14 #the alpha* we will have at the LE
+startIncrease = 0.2  #the c at which the increase starts
 numberPoints = 8    #amount of points to use
-alphaMax = 22 #maximum alpha we will reach between Increase Start and LE
+alphaMax = 18 #maximum alpha we will reach between Increase Start and LE
 alphaMaxLocation = 0.08
 
 adaptSide = "upper" #which side to iterate for MPR choices are "upper", "lower", "mixed", "none"
@@ -96,7 +96,7 @@ foil1.writeMPR(adaptSide,0.7,0)
 
 
 #Analysis
-foil1.inviscidCalc_byIncrements(0,3,5)
+foil1.inviscidCalc_byIncrements(0,3,7)
 foil1.naturalTransitionCalc(3000)
 foil1.visousCalc(0,15,15)
 foil1.CloseFile()

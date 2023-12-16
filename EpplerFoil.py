@@ -95,6 +95,8 @@ class AirFoil:
             nue[i] = self.CtoNLower(c[i])
             if(nue[i] <= nuebefore):
                 print("WARNING Nue must be increasing")
+            if(onp.isnan(nue[i])):
+                print("WARNING One of the lower side Cs was converted to NaN")
             nuebefore = nue[i]
         
         if(len(c) != len(a)):
@@ -229,14 +231,14 @@ class AirFoil:
         i = self.index_RE
         self.index_RE = i + 1
         self.REs[i] = RE #RE numbers for visous calculations
-        self.index_transMode[i] = 3.01
+        self.index_transMode[i] = 3 #3.01 The Triangles are TOO POWERFULLL
         return 0
 
     def forcedTransitionCalc(self,RE,cTransUpper,cTransLower): #BL calculation with forced transition
         i = self.index_RE
         self.index_RE = i + 1
         self.REs[i] = RE #RE numbers for visous calculations
-        self.index_transMode[i] = 1.01
+        self.index_transMode[i] = 1 #1.01 seems to crash when more than 1 RE is used
         self.transTop[i] = cTransUpper
         self.transBottom[i] = cTransLower
         return 0
@@ -247,7 +249,7 @@ class AirFoil:
         File.write("RE  14     ")
         for i in range(0,5):
             if(self.index_transMode[i] == 0):
-                File.write("0 " + str(round(self.REs[i],0)) + " ")
+                File.write("0 " + str(int(self.REs[i])) + " ")
             else:
                 File.write(str(self.index_transMode[i]) + " " + str(round(self.REs[i],0)) + " ")
         for i in range(0,4):
