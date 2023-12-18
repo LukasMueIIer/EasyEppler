@@ -262,8 +262,7 @@ class AirFoil:
         self.File.close()
         return 0
 
-    def ExecuteEppler(self) -> int: #execute the Eppler Code !this requires ghost script, freePDF and propper file placement -> read in README.md
-        #only required to execute eppler
+    def Execute(self) -> int:
         import os
         from subprocess import Popen, PIPE, call
 
@@ -273,7 +272,10 @@ class AirFoil:
         if(os.system("echo " + self.FileName + " |prehb15.exe")):
             print("WARNING couldnt execute eppler code !!!!!")
 
-
+    def ExecuteAndOpen(self) -> int: #execute the Eppler Code !this requires ghost script, freePDF and propper file placement -> read in README.md
+        #only required to execute eppler
+        import os
+        from subprocess import Popen, PIPE, call
 
         p = Popen(['pprs.exe'], stdout=PIPE, stdin=PIPE, stderr=PIPE)
         command = "N\n0\n1\n-1"
@@ -288,3 +290,30 @@ class AirFoil:
         if(os.system("ps2pdf druck.ps " + filename + ".pdf")):
             print("WARNING couldnt convert to PDF !!!!!")
         os.system(filename + ".pdf")
+
+    def ReadResults(self) -> int:
+        resName = self.FileName[:-3] + "l"
+        f = open(resName, "r")
+        lines = f.readlines()
+        
+        #read polar
+        mode = 0
+        #0 is search for block
+        #1 is read cl, cd
+        #3 is read cm
+
+        alpha = []
+        Cl = []
+        Cd = []
+        Cm = []
+
+        for line in lines:
+            if (mode == 0):
+                if("S TURB  S SEP" in line):
+                    alpha = onp.append(alpha,float(line[2:7]))
+                    mode = 1
+            elif (mode == 1):
+                if("TOTAL CL"):
+                    
+
+            print(alpha)

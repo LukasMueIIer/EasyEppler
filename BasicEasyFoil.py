@@ -1,6 +1,7 @@
 import aerosandbox as asb
 import aerosandbox.numpy as np
 import EpplerFoil
+import matplotlib.pyplot as plt
 
 ##create a laminar airfoil from basic variables
 
@@ -129,8 +130,59 @@ foil1.writeMPR(adaptSide,0.4,0)
 #Analysis
 foil1.inviscidCalc_byIncrements(0,3,7)
 foil1.forcedTransitionCalc(3000,100,75)
-foil1.forcedTransitionCalc(2000,100,75)
-foil1.forcedTransitionCalc(1000,100,75)
+#foil1.forcedTransitionCalc(2000,100,75)
+#foil1.forcedTransitionCalc(1000,100,75)
 foil1.visousCalc(0,17,15)
 foil1.CloseFile()
-foil1.ExecuteEppler()
+#foil1.ExecuteAndOpen()
+foil1.Execute()
+#
+
+
+resName = "entwurf.l"
+f = open(resName, "r")
+lines = f.readlines()
+        
+        #read polar
+mode = 0
+        #0 is search for block
+        #1 is read cl, cd
+        #3 is read cm
+
+alpha = []
+Cl = []
+Cd = []
+Cm = []
+
+
+for line in lines:
+    if (mode == 0):
+        if("S TURB  S SEP" in line):
+            string = line[2:7]
+            alpha = np.append(alpha,float(string))
+            mode = 1
+    elif (mode == 1):
+        if("TOTAL CL" in line):
+            string = line[13:18]
+            Cl = np.append(Cl,float(string))
+            string = line[25:30]
+            Cd = np.append(Cd,0.01 * float(string))
+            mode = 2
+    elif (mode == 2):
+        if("CM" in line):
+            string = line[25:30]
+            Cm = np.append(Cm,0.01 * float(string))
+            mode = 0
+        else:
+            print("Didnt find Cm line in .l file ... somethings wrong")
+
+print(alpha)
+print(Cl)
+print(Cd)
+print(Cm)
+
+fig, ax = plt.subplots()
+
+ax.plot(Cl, Cd, linewidth=2.0)
+
+plt.show()
