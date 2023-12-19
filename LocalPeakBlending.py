@@ -4,6 +4,7 @@ import EpplerFoil
 
 ##create a laminar airfoil from basic variables
 ##here the anti suction peak function is modified
+##so far not very good results tbh
 
 ##Bottom side
 lamBottom = 0.3 #Ca at which the bottom surface should be laminar
