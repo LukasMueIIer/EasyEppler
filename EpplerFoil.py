@@ -10,9 +10,11 @@ class CalculationRes: #Class that holds results from viscous calculation
     def ClFromAlpha(self,A):
         return onp.interp(A,self.alpha,self.Cl)
     def CdFromAlpha(self,A):
-        return onp.interp(A,self.alpha,self.Cl)
+        return onp.interp(A,self.alpha,self.Cd)
     def CmFromAlpha(self,A):
-        return onp.interp(A,self.alpha,self.Cl)
+        return onp.interp(A,self.alpha,self.Cm)
+    def CdFromCl(self,Cl):
+        return onp.interp(Cl,self.Cl,self.Cd)
     def MaxClInd(self):
         return onp.argmax(self.Cl, axis=None)
     def MaxCl(self):

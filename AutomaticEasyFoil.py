@@ -21,3 +21,7 @@ def FoilEval(aTop,aBottom,lengthTop,lengthBottom,MPRTop,MPRBottom) -> float:
 
     #Finalize
     foil.writeMPR("upper",0.4,0)
+
+    #Calculations
+    foil.inviscidCalc_byIncrements(0,3,5)
+    foil.naturalTransitionCalc(3000)
