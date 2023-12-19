@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 lamBottom = 0.4 #Ca at which the bottom surface should be laminar
 lamLengthBottom = 0.70 #position where MPR starts at bottom -> lower end of bucket
 #Ramp Bottom Side against lam seperation
-blendingLamBottom = 0.05 #reach of ramp into lam area -> increase when laminar separation occurs at MPR
-blendingMPRBottom = 0.05 #ramp into MPR -> to combat laminar separation 
+blendingLamBottom = 0.1 #reach of ramp into lam area -> increase when laminar separation occurs at MPR
+blendingMPRBottom = 0.1 #ramp into MPR -> to combat laminar separation 
 #MPR bottom side 
 shapeMPRBottom = 0.23
 strengthMPRBottom = 0.7
@@ -24,13 +24,13 @@ numBottom = 5 #amount of points
 lamTop = 0.8 #Target Ca for laminar flow at Top -> upper end of bucket
 lamLengthTop = 0.6 #laminar length
 #Ramp Top Side against lam seperation
-blendingLamTop = 0.05 #reach of ramp into lam area -> increase when laminar separation occurs at MPR
-blendingMPRTop = 0.05 #ramp into MPR -> to combat laminar separation 
+blendingLamTop = 0.1 #reach of ramp into lam area -> increase when laminar separation occurs at MPR
+blendingMPRTop = 0.1 #ramp into MPR -> to combat laminar separation 
 #MPR Top side 
 shapeMPRTop = -1
 strengthMPRTop = 0.7
 #alpah* increase against suction peak -> increases alpha* smothly (according to a polynom) towards the LE to combat suction peaks
-alphaLE = 15 #the alpha* we will have at the LE
+alphaLE = lamTop/0.11 #the alpha* we will have at the LE
 startIncrease = 0.2  #the c at which the increase starts
 numberPoints = 4    #amount of points to use
 
@@ -38,7 +38,7 @@ adaptSide = "upper" #which side to iterate for MPR choices are "upper", "lower",
 
 
 ##GenerateFile
-foil1 = EpplerFoil.AirFoil("entwurf.dat","TF",426)
+foil1 = EpplerFoil.AirFoil("entwurf.dat","TF",427)
 foil1.BeginnFile()
 
 #generate upper side alpha*
@@ -132,57 +132,13 @@ foil1.inviscidCalc_byIncrements(0,3,7)
 foil1.forcedTransitionCalc(3000,100,75)
 #foil1.forcedTransitionCalc(2000,100,75)
 #foil1.forcedTransitionCalc(1000,100,75)
-foil1.visousCalc(0,17,15)
+foil1.visousCalc(0,12,10)
 foil1.CloseFile()
-#foil1.ExecuteAndOpen()
-foil1.Execute()
+foil1.ExecuteAndOpen()
+#foil1.Execute()
 #
 
-
-resName = "entwurf.l"
-f = open(resName, "r")
-lines = f.readlines()
-        
-        #read polar
-mode = 0
-        #0 is search for block
-        #1 is read cl, cd
-        #3 is read cm
-
-alpha = []
-Cl = []
-Cd = []
-Cm = []
-
-
-for line in lines:
-    if (mode == 0):
-        if("S TURB  S SEP" in line):
-            string = line[2:7]
-            alpha = np.append(alpha,float(string))
-            mode = 1
-    elif (mode == 1):
-        if("TOTAL CL" in line):
-            string = line[13:18]
-            Cl = np.append(Cl,float(string))
-            string = line[25:30]
-            Cd = np.append(Cd,0.01 * float(string))
-            mode = 2
-    elif (mode == 2):
-        if("CM" in line):
-            string = line[25:30]
-            Cm = np.append(Cm,0.01 * float(string))
-            mode = 0
-        else:
-            print("Didnt find Cm line in .l file ... somethings wrong")
-
-print(alpha)
-print(Cl)
-print(Cd)
-print(Cm)
-
-fig, ax = plt.subplots()
-
-ax.plot(Cl, Cd, linewidth=2.0)
-
-plt.show()
+calcRes = foil1.ReadResults()
+iUp = calcRes.UpperBucketIndex()
+iLow = calcRes.LowerBucketIndex()
+print(calcRes.Cd)

@@ -1,5 +1,60 @@
 import numpy as onp
 
+class CalculationRes: #Class that holds results from viscous calculation
+    def __init__(self,A,Cl,Cd,Cm,thick):
+        self.alpha = A
+        self.Cl = Cl
+        self.Cd = Cd
+        self.Cm = Cm
+        self.thickness = thick
+    def ClFromAlpha(self,A):
+        return onp.interp(A,self.alpha,self.Cl)
+    def CdFromAlpha(self,A):
+        return onp.interp(A,self.alpha,self.Cl)
+    def CmFromAlpha(self,A):
+        return onp.interp(A,self.alpha,self.Cl)
+    def MaxClInd(self):
+        return onp.argmax(self.Cl, axis=None)
+    def MaxCl(self):
+        return self.Cl(self.MaxClInd())
+    def MinCdInd(self):
+        return onp.argmin(self.Cd, axis=None)
+    def MinCd(self):
+        return self.Cd(self.MinCdInd())
+    def UpperBucketIndex(self):
+        i = self.MinCdInd()
+        itter = True
+        dcd = 0
+        while(itter):
+            _dcd = abs(self.Cd[i + 1] - self.Cd[i])
+            if(_dcd < dcd):
+                i = i - 1
+                itter = False
+            else:
+                dcd = _dcd
+                i = i + 1
+            if(i == (len(self.Cd - 2))):
+                itter = False
+        return i
+
+    def LowerBucketIndex(self):
+        i = self.MinCdInd()
+        itter = True
+        dcd = 0
+        while(itter):
+            _dcd = abs(self.Cd[i] - self.Cd[i - 1])
+            if(_dcd < dcd):
+                i = i + 1
+                itter = False
+            else:
+                dcd = _dcd
+                i = i - 1
+            if(i == (len(self.Cd - 1))):
+                itter = False
+                i = 0
+        return i
+
+
 
 
 class AirFoil:
@@ -276,7 +331,7 @@ class AirFoil:
         #only required to execute eppler
         import os
         from subprocess import Popen, PIPE, call
-
+        self.Execute()
         p = Popen(['pprs.exe'], stdout=PIPE, stdin=PIPE, stderr=PIPE)
         command = "N\n0\n1\n-1"
         stdout_data = p.communicate(input=command.encode('utf-8'))[0]
@@ -291,7 +346,7 @@ class AirFoil:
             print("WARNING couldnt convert to PDF !!!!!")
         os.system(filename + ".pdf")
 
-    def ReadResults(self) -> int:
+    def ReadResults(self) -> CalculationRes:
         resName = self.FileName[:-3] + "l"
         f = open(resName, "r")
         lines = f.readlines()
@@ -307,13 +362,57 @@ class AirFoil:
         Cd = []
         Cm = []
 
+        _alpha = 0
+        _Cl = 0
+        _Cd = 0
+        _Cm = 0
+        thick = 0
         for line in lines:
+            if("THICKNESS" in line):
+                string = line[11:17]
+                thick = float(string)
+
             if (mode == 0):
                 if("S TURB  S SEP" in line):
-                    alpha = onp.append(alpha,float(line[2:7]))
-                    mode = 1
+                    string = line[2:7]
+                    if("*" in string): #not valic
+                        print("Entry not Valid, separation")
+                    else:
+                        _alpha = float(string)
+                        mode = 1
             elif (mode == 1):
-                if("TOTAL CL"):
-                    
+                if("TOTAL CL" in line):
+                    string = line[13:18]
+                    if("*" in string): #not valic
+                        print("Entry not Valid, separation")
+                        mode = 0
+                    else:
+                        _Cl = float(string)
+                        string = line[25:30]
+                        if("*" in string): #not valic
+                            print("Entry not Valid, separation")
+                            mode = 0
+                        else:
+                            _Cd = 0.01 * float(string)
+                            mode = 2
+            elif (mode == 2):
+                if("CM" in line):
+                    if("*" in string): #not valic
+                        print("Entry not Valid, separation")
+                        mode = 0
+                    else:
+                        string = line[25:30]
+                        alpha = onp.append(alpha,_alpha)
+                        Cl = onp.append(Cl,_Cl)
+                        Cd = onp.append(Cd,_Cd)
+                        Cm = onp.append(Cm,0.01 * float(string))
+                        
+                        mode = 0
+                else:
+                    print("Didnt find Cm line in .l file ... somethings wrong")
 
-            print(alpha)
+        if(thick == 0):
+            print("Didnt find Thickness")
+
+        return CalculationRes(alpha,Cl,Cd,Cm,thick)
+
