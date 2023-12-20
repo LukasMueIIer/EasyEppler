@@ -21,7 +21,7 @@ foil1.BeginnFile()  #start writing to file
 #here we want from the TE to c=0.3 a alpha* of 8.3 and from 0.3 to 0.1 a alpha* of 10 -> we work from the back to the front
 #0 can only be used for the LE (its weird but it is what it is) and must be pressent, so if its not part of the input
 #it is automatically added. A warning will be displayed if 0 point is added to remind you to only use it for the LE
-foil1.WriteUpperC_Alpha([0.3,0.29,0.1],[8.3,8.4,10])
+foil1.WriteUpperC_Alpha([0.3,0.29,0.1],[8.3,8.45,10])
 
 #Now we create the MPR, first the chord lenght where it should start (here c = 0.6),
 #then we say at what length the closing curve should be added (here c = 0.98 <- is a good standard value).
@@ -36,7 +36,7 @@ foil1.RampUpper(0.2,0.05)
 ##Defining Lower Surface
 
 #follows the same rules however the c's must now be increasing -> from front to back
-foil1.WriteLowerC_Alpha([0.98],[2.7])
+foil1.WriteLowerC_Alpha([0.98],[2.75])
 foil1.MPRLower(0.7,0.98,0.23,0.7)
 foil1.RampLower(0.2,0.05)
 
@@ -68,5 +68,5 @@ foil1.visousCalc(0,15,15)
 foil1.CloseFile()
 
 #Now run the Eppler Code with the created file
-foil1.ExecuteEppler()
+foil1.ExecuteAndOpen()
 

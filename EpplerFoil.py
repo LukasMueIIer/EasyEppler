@@ -13,16 +13,26 @@ class CalculationRes: #Class that holds results from viscous calculation
         return onp.interp(A,self.alpha,self.Cd)
     def CmFromAlpha(self,A):
         return onp.interp(A,self.alpha,self.Cm)
-    def CdFromCl(self,Cl):
-        return onp.interp(Cl,self.Cl,self.Cd)
     def MaxClInd(self):
         return onp.argmax(self.Cl, axis=None)
     def MaxCl(self):
-        return self.Cl(self.MaxClInd())
+        if(len(self.alpha) == 0):
+            return -1
+        return self.Cl[self.MaxClInd()]
+    def MinClInd(self):
+        return onp.argmin(self.Cl, axis=None)
+    def MinCl(self):
+        return self.Cl[self.MinClInd()]
     def MinCdInd(self):
         return onp.argmin(self.Cd, axis=None)
     def MinCd(self):
-        return self.Cd(self.MinCdInd())
+        return self.Cd[self.MinCdInd()]
+    def CdFromCl(self,Cl):
+        if(Cl > self.MaxCl()):
+            return 1
+        elif(Cl < self.MinCl()):
+            return 1
+        return onp.interp(Cl,self.Cl,self.Cd)
     def UpperBucketIndex(self):
         i = self.MinCdInd()
         itter = True
@@ -127,18 +137,18 @@ class AirFoil:
         File.write("TRA1" + " " + " " + str(self.Number).zfill(4)) #begin TraLine
         
         for i in range(0,len(c)-1):
-            if(i > 5):
-                if((i % 6) == 0):
+            if(i > 3):
+                if((i % 5) == 0):
                     File.write("\n")
                     File.write("TRA1" + " " + " " + str(self.Number).zfill(4)) #begin new TraLine we dont want more than 10 entries
-            File.write(" " + str(round(nue[i],1)) + " " + str(round(a[i],1))) 
+            File.write(" " + str(round(nue[i],2)) + " " + str(round(a[i],2))) 
 
         #check for last digit
         if(self.ZeroN - nue[-1] < 0.3):
-            File.write(" " + str(round(0,1)) + " " + str(round(a[-1],1)))
+            File.write(" " + str(round(0,1)) + " " + str(round(a[-1],2)))
         else:
-            File.write(" " + str(round(nue[-1],1)) + " " + str(round(a[-1],1)))
-            File.write(" " + str(round(0,1)) + " " + str(round(a[-1],1)))  #we need a zero entrie
+            File.write(" " + str(round(nue[-1],2)) + " " + str(round(a[-1],2)))
+            File.write(" " + str(round(0,1)) + " " + str(round(a[-1],2)))  #we need a zero entrie
             print("WARNING Zero entrie was automatticaly added")
         File.write("\n")
         return 0
@@ -165,18 +175,18 @@ class AirFoil:
         File.write("TRA1" + " " + " " + str(self.Number).zfill(4)) #begin TraLine
         
         for i in range(0,len(c)-1):
-            if(i > 5):
-                if((i % 10) == 0):
+            if(i > 3):
+                if((i % 5) == 0):
                     File.write("\n")
                     File.write("TRA1" + " " + " " + str(self.Number).zfill(4)) #begin new TraLine we dont want more than 10 entries
-            File.write(" " + str(round(nue[i],1)) + " " + str(round(a[i],1))) 
+            File.write(" " + str(round(nue[i],2)) + " " + str(round(a[i],2))) 
 
         #check for last digit
         if(self.N - nue[-1] < 0.51):
-            File.write(" " + str(round(self.N,1)) + " " + str(round(a[-1],1)))
+            File.write(" " + str(round(self.N,2)) + " " + str(round(a[-1],2)))
         else:
-            File.write(" " + str(round(nue[-1],1)) + " " + str(round(a[-1],1)))
-            File.write(" " + str(round(self.N,1)) + " " + str(round(a[-1],1)))  #we need a Final Entry
+            File.write(" " + str(round(nue[-1],2)) + " " + str(round(a[-1],2)))
+            File.write(" " + str(round(self.N,2)) + " " + str(round(a[-1],2)))  #we need a Final Entry
         File.write("\n")
         return 0
 
@@ -235,19 +245,19 @@ class AirFoil:
         if(self.UseRamp != 0):  #the ramp hase been activated
             File.write("RAMP       ")
             #calculate delta nues
-            dU = round(self.CtoNUpper(self.cMPRup - self.dc_Front_Up) - self.MPRUpNue,1)
+            dU = round(self.CtoNUpper(self.cMPRup - self.dc_Front_Up) - self.MPRUpNue,2)
             File.write(str(dU)+" ")
-            dU = round(self.MPRUpNue - self.CtoNUpper(self.cMPRup + self.dc_Back_Up),1)
+            dU = round(self.MPRUpNue - self.CtoNUpper(self.cMPRup + self.dc_Back_Up),2)
             File.write(str(dU)+" ")
-            dU = round(self.CtoNLower(self.cMPRlow) - self.CtoNLower(self.cMPRlow - self.dc_Front_Low),1)
+            dU = round(self.CtoNLower(self.cMPRlow) - self.CtoNLower(self.cMPRlow - self.dc_Front_Low),2)
             File.write(str(dU)+" ")
-            dU = round(self.CtoNLower(self.cMPRlow + self.dc_Back_Low) - self.CtoNLower(self.cMPRlow),1)
+            dU = round(self.CtoNLower(self.cMPRlow + self.dc_Back_Low) - self.CtoNLower(self.cMPRlow),2)
             File.write(str(dU)+"\n")
         
         File.write("TRA2" + "8" + " " + str(self.Number).zfill(4) + " ") #begin Tra2Line
-        File.write(str(round(self.CloseUpNue,1)) + " " + str(round(self.MPRUpNue,1)) + " " + str(round(self.MPRModeUper,1)) + " " + str(round(self.MPRF1Uper,2)) + " " + str(round(self.MPRF2Uper,2)) + " " ) #Upper Side
-        File.write(str(round(self.CloseLowNue,1)) + " " + str(round(self.MPRLowNue,1)) + " " + str(round(self.MPRModeLow,1)) + " " + str(round(self.MPRF1Low,2)) + " " + str(round(self.MPRF2Low,2)) + " " ) #lower side
-        File.write(str(round(mode,0)) + " " + str(round(KR,1)) + " " + str(round(Ktol,1)) + "\n") #lower side
+        File.write(str(round(self.CloseUpNue,2)) + " " + str(round(self.MPRUpNue,2)) + " " + str(round(self.MPRModeUper,1)) + " " + str(round(self.MPRF1Uper,2)) + " " + str(round(self.MPRF2Uper,2)) + " " ) #Upper Side
+        File.write(str(round(self.CloseLowNue,2)) + " " + str(round(self.MPRLowNue,2)) + " " + str(round(self.MPRModeLow,1)) + " " + str(round(self.MPRF1Low,2)) + " " + str(round(self.MPRF2Low,2)) + " " ) #lower side
+        File.write(str(round(mode,0)) + " " + str(round(KR,2)) + " " + str(round(Ktol,2)) + "\n") #lower side
         
         return 0
 
@@ -368,7 +378,7 @@ class AirFoil:
         _Cl = 0
         _Cd = 0
         _Cm = 0
-        thick = 0
+        thick = 100
         for line in lines:
             if("THICKNESS" in line):
                 string = line[11:17]
@@ -413,7 +423,7 @@ class AirFoil:
                 else:
                     print("Didnt find Cm line in .l file ... somethings wrong")
 
-        if(thick == 0):
+        if(thick == 100):
             print("Didnt find Thickness")
 
         return CalculationRes(alpha,Cl,Cd,Cm,thick)

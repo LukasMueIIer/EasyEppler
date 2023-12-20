@@ -18,7 +18,7 @@ strengthMPRBottom = 0.7
 cStart = 0.01
 cEnde = 0.1
 alphaBE = lamBottom/0.11 #here a smaller number combats suction peaks
-numBottom = 5 #amount of points
+numBottom = 2 #amount of points
 
 ##Top Side
 lamTop = 0.8 #Target Ca for laminar flow at Top -> upper end of bucket
@@ -30,15 +30,15 @@ blendingMPRTop = 0.1 #ramp into MPR -> to combat laminar separation
 shapeMPRTop = -1
 strengthMPRTop = 0.7
 #alpah* increase against suction peak -> increases alpha* smothly (according to a polynom) towards the LE to combat suction peaks
-alphaLE = lamTop/0.11 #the alpha* we will have at the LE
+alphaLE = 12 #the alpha* we will have at the LE
 startIncrease = 0.2  #the c at which the increase starts
-numberPoints = 4    #amount of points to use
+numberPoints = 7    #amount of points to use
 
 adaptSide = "upper" #which side to iterate for MPR choices are "upper", "lower", "mixed", "none"
 
 
 ##GenerateFile
-foil1 = EpplerFoil.AirFoil("entwurf.dat","TF",427)
+foil1 = EpplerFoil.AirFoil("entwurf.dat","TF",429)
 foil1.BeginnFile()
 
 #generate upper side alpha*
