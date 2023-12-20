@@ -41,7 +41,7 @@ def funcFit(x0,Fx0,dFx0,ddFx0,x1,Fx1,dFx1,x):
     return res
 
 def GenerateFoil(aLamT,startBlendT,LeT,dLeT,recTop,strengthRecTop,aLamB,startBlendB,LeB,dLeB,recBot,strengthRecBot,RE=3000,open=False,num=7) -> EpplerFoil.AirFoil:
-    foil = EpplerFoil.AirFoil("entwurf.dat","AO",10,_N = 60, _ZeroN = 31)
+    foil = EpplerFoil.AirFoil("entwurf.dat","AO",12,_N = 60, _ZeroN = 31)
     foil.BeginnFile()
 
     #Upper Side
@@ -64,7 +64,7 @@ def GenerateFoil(aLamT,startBlendT,LeT,dLeT,recTop,strengthRecTop,aLamB,startBle
     #Calculations
     foil.inviscidCalc_byIncrements(0,3,5)
     foil.naturalTransitionCalc(RE)
-    foil.visousCalc(0,17,17)
+    foil.visousCalcNoDecimals(0,17,18)
     foil.CloseFile()
     if(open):
         foil.ExecuteAndOpen()

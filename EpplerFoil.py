@@ -280,6 +280,13 @@ class AirFoil:
             File.write(str(round(alpha[i],1)) + " ")
         File.write(str(round(alpha[-1],1)) + "\n")
 
+    def writeAlphaNoDecimals(self,alpha): #prints the ALFA command without decimals
+        File = self.File
+        File.write("ALFA     1 ")
+        for i in range(0,len(alpha) - 1):
+            File.write(str(int(round(alpha[i],0))) + " ")
+        File.write(str(int(round(alpha[-1],0))) + "\n")
+
     def inviscidCalc_Custom(self,alphas) -> int:   #invicid calculation with array as alpha input
         self.writeAlpha(alphas)
         self.File.write("DIAG\n")
@@ -324,6 +331,20 @@ class AirFoil:
         File.write(str(round(self.transTop[-1])) + " " + str(round(self.transBottom[-1])) + "\n" )
         File.write("CDCL\n")    
     
+    def visousCalcNoDecimals(self,amin,amax,n): #This allows for more points to be written but no decimal numbers avaliable
+        File = self.File
+        self.writeAlphaNoDecimals(onp.linspace(amin,amax,num=n))
+        File.write("RE  14     ")
+        for i in range(0,5):
+            if(self.index_transMode[i] == 0):
+                File.write("0 " + str(int(self.REs[i])) + " ")
+            else:
+                File.write(str(self.index_transMode[i]) + " " + str(round(self.REs[i],0)) + " ")
+        for i in range(0,4):
+            File.write(str(round(self.transTop[i])) + " " + str(round(self.transBottom[i])) + " " )
+        File.write(str(round(self.transTop[-1])) + " " + str(round(self.transBottom[-1])) + "\n" )
+        File.write("CDCL\n")
+
     def CloseFile(self) -> int: #Finalize the File
         self.File.write("ENDE")
         self.File.close()
