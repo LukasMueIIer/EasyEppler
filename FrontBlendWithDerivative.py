@@ -41,7 +41,7 @@ def funcFit(x0,Fx0,dFx0,ddFx0,x1,Fx1,dFx1,x):
     return res
 
 def GenerateFoil(aLamT,startBlendT,LeT,dLeT,recTop,strengthRecTop,aLamB,startBlendB,LeB,dLeB,recBot,strengthRecBot,RE=3000,open=False,num=7) -> EpplerFoil.AirFoil:
-    foil = EpplerFoil.AirFoil("entwurf.dat","AO",5,_N = 60, _ZeroN = 31)
+    foil = EpplerFoil.AirFoil("entwurf.dat","AO",10,_N = 60, _ZeroN = 31)
     foil.BeginnFile()
 
     #Upper Side
@@ -64,7 +64,7 @@ def GenerateFoil(aLamT,startBlendT,LeT,dLeT,recTop,strengthRecTop,aLamB,startBle
     #Calculations
     foil.inviscidCalc_byIncrements(0,3,5)
     foil.naturalTransitionCalc(RE)
-    foil.visousCalc(0,15,15)
+    foil.visousCalc(0,17,17)
     foil.CloseFile()
     if(open):
         foil.ExecuteAndOpen()
@@ -73,6 +73,53 @@ def GenerateFoil(aLamT,startBlendT,LeT,dLeT,recTop,strengthRecTop,aLamB,startBle
     return foil
 
 def OptiWrapperGenerate(x,RE,open=False,num=7):
-    GenerateFoil(x[0],x[1],x[2],x[3],x[4],x[5],x[6],x[7],x[8],x[9],x[10],x[11],RE=RE,open=open,num=num)
+    return GenerateFoil(x[0],x[1],x[2],x[3],x[4],x[5],x[6],x[7],x[8],x[9],x[10],x[11],RE=RE,open=open,num=num)
 
 OptiWrapperGenerate([6,0.1,8,0,0.3,0.7,3,0.15,2,0,0.3,0.7],RE=3000,open=True,num=7)
+
+
+def Evaluate(x):
+    ##We evaluate for multiple RE numbers starting with 3000
+    foil = OptiWrapperGenerate(x,3000)
+    res3000 = foil.ReadResults()
+    #Thickness
+    targThick = 15
+    errorThick = abs(targThick - res3000.thickness)
+    weight = 1
+    Error = errorThick * weight
+    print("Thickness:" + str(res3000.thickness))
+    #Bucket at ca = 0.3
+    i = res3000.LowerBucketIndex()
+    CaLow = res3000.Cl[i]
+    errorLowerBucker = abs(CaLow - 0.3)
+    weight = 20
+    Error = Error + errorLowerBucker * weight
+    print("Lower Bucket " + str(CaLow))
+
+    ##Now at 2000
+    foil = OptiWrapperGenerate(x,2000)
+    res2000 = foil.ReadResults()
+    #Upper Bucker
+    i = res2000.UpperBucketIndex()
+    CaHigh = res2000.Cl[i]
+    errorUpperBucker = abs(CaHigh - 0.8)
+    weight = 20
+    Error = Error + errorUpperBucker * weight
+    print("Upper Bucket " + str(CaHigh))
+
+    #Now at 1000
+    foil = OptiWrapperGenerate(x,1000)
+    res1000 = foil.ReadResults()
+    #high lift
+    ClMax = res1000.MaxCl()
+    if(ClMax < 1.5): #Non Linear punishment for underperforming
+        errorClMax = (1.5 - ClMax) * 6
+    else:
+        errorClMax = (1.5 - ClMax) 
+    weight = 10
+    Error = Error + errorClMax * weight
+    print("ClMax " + str(ClMax))
+    
+    print("Error: " + str(Error))
+
+    return Error
