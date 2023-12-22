@@ -92,7 +92,7 @@ def Evaluate(x):
     Error = errorThick * weight
     print("Thickness:" + str(res3000.thickness))
     #Bucket at ca = 0.3
-    i = res3000.LocalLowerBucketIndex()
+    i = res3000.LowerBucketIndex()
     CaLow = res3000.Cl[i]
     errorLowerBucker = abs(CaLow - 0.3)
     weight = 40
@@ -103,7 +103,7 @@ def Evaluate(x):
     foil = OptiWrapperGenerate(x,2000,alphaMin=4,alphaMax=10,open=True)
     res2000 = foil.ReadResults()
     #Upper Bucker
-    i = res2000.LocalUpperBucketIndex()
+    i = res2000.UpperBucketIndex()
     CaHigh = res2000.Cl[i]
     errorUpperBucker = abs(CaHigh - 0.8)
     weight = 40
@@ -116,7 +116,7 @@ def Evaluate(x):
     #high lift
     ClMax = res1000.MaxCl()
     if(ClMax < 1.5): #Non Linear punishment for underperforming
-        errorClMax = (1.5 - ClMax) * 40
+        errorClMax = (1.5 - ClMax) * 10
     else:
         errorClMax = (1.5 - ClMax) * 5
     weight = 1
@@ -172,17 +172,18 @@ def singleChangeOptimizer(Eval,upperBounds,lowerBounds,iniGuess,iniStepSize,maxI
     delta = np.ones(n)*99999 #delta is how much the error changed with the last change of this variable (normalized) with iniStepSize
     multiplier = np.ones(n)         #multiplier for the delta
     direction = np.ones(n)           #direction of the last step where error decreased
+    Progressless = np.zeros(n)      #counts how many cicles we made no progress by moving index variable 
+    targets = [1,0.5,0.2,0.1,2,0.5,3,0.5,2,0.5,2,0.5,2,0.5,2,0.5,2,0.5,2,0.5,2,0.5,2,0.5]
 
     stepSize = iniStepSize
     guess = iniGuess
     currentError = Eval(guess)
 
-    targetStep = 1          #wir versuchen error um 1 zu ändern
-
     while(iter < maxIter):
         iter = iter+1
 
-        print(currentError)
+        print("Current best config with Error: " + str(currentError))
+        print(guess)
 
         #if(iter == n + 1):  #reselt multiplieres after first initial runn
          #   multiplier = np.ones(n)
@@ -196,6 +197,7 @@ def singleChangeOptimizer(Eval,upperBounds,lowerBounds,iniGuess,iniStepSize,maxI
         #increse multiplier of all the others
         multiplier = np.add(multiplier,np.ones(n))
         multiplier[i] = 1
+        targetStep = targets[int(Progressless[i])]
 
         #first step according to direction
         _guess = guess
@@ -214,9 +216,17 @@ def singleChangeOptimizer(Eval,upperBounds,lowerBounds,iniGuess,iniStepSize,maxI
             guess = _guess
             #adapt stepsize so we move 1
             stepSize[i] = targetStep * stepSize[i] / delta[i]
+            Progressless[i] = 0
             continue
         else:   #try other direction
             _guess[i] = _guess[i] - 2 * direction[i] * stepSize[i]
+            
+            #check again for boundaries
+            if(_guess[i] < lowerBounds[i]):
+                _guess[i] = lowerBounds[i]
+            elif(_guess[i] > upperBounds[i]):
+                _guess[i] = upperBounds[i]
+            
             _Error = Eval(_guess)
             if(_Error < currentError):
                 delta[i] = abs(currentError - _Error)
@@ -224,6 +234,7 @@ def singleChangeOptimizer(Eval,upperBounds,lowerBounds,iniGuess,iniStepSize,maxI
                 direction[i] = -1 * direction[i]
                 stepSize[i] = targetStep * stepSize[i] / delta[i]
                 guess = _guess
+                Progressless[i] = 0
                 continue
             else:
                 _delta = abs(_Error1 - _Error)
@@ -231,6 +242,7 @@ def singleChangeOptimizer(Eval,upperBounds,lowerBounds,iniGuess,iniStepSize,maxI
                 stepSize[i] = targetStep * 2 * stepSize[i] / delta[i]
 
                 delta[i] = 0   #punishment, since we dont improve
+                Progressless[i] = Progressless[i] + 1
     print("Final best Error:" + str(currentError))
     return guess
 
@@ -242,7 +254,5 @@ iniGuess = [6,0.1,8,0,0.7,0.7,3,0.15,2,0,0.7,0.7]
 iniStepSize = [1,0.1,1,0.5,0.2,0.2,1,0.1,0.5,0.5,0.2,0.2]
 #bounds = Bounds([3, 0, 3, -5 ,0.3 ,0,0,0,-2,-5,0.3,0], [20, 1, 20, 5 , 1, 1.2, 6, 1, 5, 5, 1, 1])
 
-#res = singleChangeOptimizer(Evaluate,upperBounds,lowerBounds,iniGuess,iniStepSize,maxIter=100)
-#OptiWrapperGenerate(res,3000,open=True,num=7)
-foil = OptiWrapperGenerate(iniGuess,3000,alphaMin=0,alphaMax=5,open=True)
-self = foil.ReadResults()
+res = singleChangeOptimizer(Evaluate,upperBounds,lowerBounds,iniGuess,iniStepSize,maxIter=100)
+OptiWrapperGenerate(res,3000,open=True,num=7)

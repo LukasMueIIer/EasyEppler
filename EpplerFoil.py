@@ -36,30 +36,73 @@ class CalculationRes: #Class that holds results from viscous calculation
     def UpperBucketIndex(self):
         #Find second central derivative
         n = len(self.Cl)
-        d2 = onp.zeros(n-2)
+        dd = onp.zeros(n-2)
         for i in range(1,n-1):
             f1 = self.Cd[i-1]
             f2 = self.Cd[i]
             f3 = self.Cd[i+1]
-            d1 = self.Cl[i] - self.Cl[i-1]
+            d1 = self.Cl[i-1] - self.Cl[i]
+            d2 = self.Cl[i+1] - self.Cl[i]
+            _dd =  (2*(d1*f2 + d2*f1 - d1*f3 - d2*f2))/(d1*(- d2**2 + d1*d2))
+            dd[i-1] = _dd
+
+        #now match upwards from min cd and find the spot where 2nd derivative decreases by more than mhh 10%
+        i = self.MinCdInd()
+        i = i + 1 #safety step to the top in case CdMin is lower laminar bucket
+        if(i > len(dd)):
+            i = len(dd)
+        itter = True
+        dcd = dd[i-1]
+        threshhold = 0.3  #decreas of more than 0.01 -> the larger number the less likely we detect noise
+        while(itter):
+            if(i >= (n-3)): #if we dont find a bucket its infinitly smoll at cdmin
+                print("Couldnt find bucket")
+                return self.MinCdInd()
+                
+            if(dd[i] - dcd < -1*threshhold):
+                return i - 1
+                
+            else:
+                dcd = dd[i]
+                i = i+1
+        
     
     def LowerBucketIndex(self):
-        i = self.MinCdInd()
-        itter = True
-        dcd = 0
-        while(itter):
-            _dcd = abs(self.Cd[i] - self.Cd[i - 1])
-            if(_dcd < dcd):
-                i = i + 1
-                itter = False
-            else:
-                dcd = _dcd
-                i = i - 1
-            if(i == (len(self.Cd) - 1)):
-                itter = False
-                i = 0
-        return i
+        #Find second central derivative
+        n = len(self.Cl)
+        dd = onp.zeros(n-2)
+        for i in range(1,n-1):
+            f1 = self.Cd[i-1]
+            f2 = self.Cd[i]
+            f3 = self.Cd[i+1]
+            d1 = self.Cl[i-1] - self.Cl[i]
+            d2 = self.Cl[i+1] - self.Cl[i]
+            _dd =  (2*(d1*f2 + d2*f1 - d1*f3 - d2*f2))/(d1*(- d2**2 + d1*d2))
+            dd[i-1] = _dd
 
+        print(dd)
+
+        #now match upwards from min cd and find the spot where 2nd derivative decreases by more than mhh 10%
+        i = self.MinCdInd()
+        if(i >= len(dd)): #in case cdMin is max entry
+            i = len(dd)
+        i = i - 1 #safety step to the bottom in case CdMin is upper laminar bucket
+        itter = True
+        dcd = dd[i-1]
+        threshhold = 0.3  #decreas of more than 0.01 -> the larger number the less likely we detect noise
+        while(itter):
+            if(i == -1): #if we dont find a bucket its infinitly smoll at cdmin
+                print("Couldnt find bucket")
+                return self.MinCdInd()
+                
+            if(dd[i] - dcd < -1*threshhold):
+                return i + 1
+                
+            else:
+                dcd = dd[i]
+                i = i-1
+        
+    
 
 
 
