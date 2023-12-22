@@ -141,20 +141,23 @@ def derivFoilEval(x,delta=[1,0.03,0.5,0.2,0.05,0.1,1,0.03,0.05,0.2,0.05,0.1]) ->
 
 
 ##This is very mehhh time for a custom optimizer
-#xs = np.array([[6,0.1,8,0,0.3,0.7,3,0.15,2,0,0.3,0.7]])
+xs = np.array([[6,0.1,8,0,0.7,0.7,3,0.15,2,0,0.7,0.7]])
 
-#x0 = [6,0.1,8,0,0.3,0.7,3,0.15,2,0,0.3,0.7]
+x0 = [6,0.1,8,0,0.7,0.7,3,0.15,2,0,0.7,0.7]
 
-#bounds = Bounds([3, 0, 3, -5 ,0.3 ,0,0,0,-2,-5,0.3,0], [20, 1, 20, 5 , 1, 1.2, 6, 1, 5, 5, 1, 1])
+bounds = Bounds([3, 0, 3, -5 ,0.3 ,0,0,0,-2,-5,0.3,0], [20, 1, 20, 5 , 1, 1.2, 6, 1, 5, 5, 1, 1])
 
-#linear_constraint = LinearConstraint([[0, 0, 1, 0, 0, 0, 0, 0, -1, 0, 0, 0]], [0],[np.inf])
+linear_constraint = LinearConstraint([[0, 0, 1, 0, 0, 0, 0, 0, -1, 0, 0, 0]], [0],[np.inf])
 
 #deleted min denominator
-#res = minimize(Evaluate, x0, method='trust-constr',  jac=derivFoilEval, hess=SR1(min_denominator=0.05),constraints=[linear_constraint],options={'verbose': 0,"maxiter":25,"initial_tr_radius":1}, bounds=bounds)
+res = minimize(Evaluate, x0, method='trust-constr',  jac=derivFoilEval, hess=SR1(min_denominator=0.05),constraints=[linear_constraint],options={'verbose': 0,"maxiter":25,"initial_tr_radius":1}, bounds=bounds)
 
-#print(res)
+print(res)
 
-#OptiWrapperGenerate(res.x,3000,open=True)
+OptiWrapperGenerate(res.x,3000,open=True)
+
+
+
 
 def singleChangeOptimizer(Eval,upperBounds,lowerBounds,iniGuess,iniStepSize,maxIter = 30):
     #Eval is function that we minimize
@@ -247,12 +250,12 @@ def singleChangeOptimizer(Eval,upperBounds,lowerBounds,iniGuess,iniStepSize,maxI
     return guess
 
 #aLamT,startBlendT,LeT,dLeT,recTop,strengthRecTop,aLamB,startBlendB,LeB,dLeB,recBot,strengthRecBot
-customGuess = [8/0.11,0.1,12,0,0.2,0.7,3,0.15,2,0,0.3,0.7]
-upperBounds = [20, 0.35, 20, 5 , 0.9, 1.2, 6, 0.35, 4.5, 5, 1, 1]
-lowerBounds = [3, 0.01, 5, -5 ,0.4 ,0,0,0.02,-2,-5,0.4,0]
-iniGuess = [6,0.1,8,0,0.7,0.7,3,0.15,2,0,0.7,0.7]
-iniStepSize = [1,0.1,1,0.5,0.2,0.2,1,0.1,0.5,0.5,0.2,0.2]
+#customGuess = [8/0.11,0.1,12,0,0.2,0.7,3,0.15,2,0,0.3,0.7]
+#upperBounds = [20, 0.35, 20, 5 , 0.9, 1.2, 6, 0.35, 4.5, 5, 1, 1]
+#lowerBounds = [3, 0.01, 5, -5 ,0.4 ,0,0,0.02,-2,-5,0.4,0]
+#iniGuess = [6,0.1,8,0,0.7,0.7,3,0.15,2,0,0.7,0.7]
+#iniStepSize = [1,0.1,1,0.5,0.2,0.2,1,0.1,0.5,0.5,0.2,0.2]
 #bounds = Bounds([3, 0, 3, -5 ,0.3 ,0,0,0,-2,-5,0.3,0], [20, 1, 20, 5 , 1, 1.2, 6, 1, 5, 5, 1, 1])
 
-res = singleChangeOptimizer(Evaluate,upperBounds,lowerBounds,iniGuess,iniStepSize,maxIter=100)
-OptiWrapperGenerate(res,3000,open=True,num=7)
+#res = singleChangeOptimizer(Evaluate,upperBounds,lowerBounds,iniGuess,iniStepSize,maxIter=100)
+#OptiWrapperGenerate(res,3000,open=True,num=7)
