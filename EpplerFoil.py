@@ -34,22 +34,15 @@ class CalculationRes: #Class that holds results from viscous calculation
             return 1
         return onp.interp(Cl,self.Cl,self.Cd)
     def UpperBucketIndex(self):
-        i = self.MinCdInd()
-        itter = True
-        dcd = 0
-        while(itter):
-            _dcd = abs(self.Cd[i + 1] - self.Cd[i])
-            if(_dcd < dcd):
-                i = i - 1
-                itter = False
-            else:
-                dcd = _dcd
-                i = i + 1
-            if(i > (len(self.Cd) - 3)):
-                print("Limit reached")
-                itter = False
-        return i
-
+        #Find second central derivative
+        n = len(self.Cl)
+        d2 = onp.zeros(n-2)
+        for i in range(1,n-1):
+            f1 = self.Cd[i-1]
+            f2 = self.Cd[i]
+            f3 = self.Cd[i+1]
+            d1 = self.Cl[i] - self.Cl[i-1]
+    
     def LowerBucketIndex(self):
         i = self.MinCdInd()
         itter = True

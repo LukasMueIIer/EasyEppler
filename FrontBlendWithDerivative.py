@@ -57,7 +57,7 @@ def GenerateFoil(aLamT,startBlendT,LeT,dLeT,recTop,strengthRecTop,aLamB,startBle
     foil.RampUpper(0.1,0.1)                         #TODO ADD RAMP
 
     #LowerSide
-    x = np.linspace(0.05,startBlendB,num=num)
+    x = np.linspace(0.01,startBlendB,num=num)
     y = funcFit(startBlendB,aLamB,0,0,0,LeB,dLeB,x)
     foil.WriteLowerC_Alpha(x,y)
     foil.MPRLower(recBot,0.98,0.23,strengthRecBot,mode=2)
@@ -83,30 +83,30 @@ def OptiWrapperGenerate(x,RE,open=False,num=7,alphaMin=0,alphaMax=17):
 
 def Evaluate(x):
     ##We evaluate for multiple RE numbers starting with 3000
-    foil = OptiWrapperGenerate(x,3000,alphaMin=0,alphaMax=5)
+    foil = OptiWrapperGenerate(x,3000,alphaMin=0,alphaMax=5,open=True)
     res3000 = foil.ReadResults()
     #Thickness
     targThick = 15
     errorThick = abs(targThick - res3000.thickness)
-    weight = 1
+    weight = 10
     Error = errorThick * weight
     print("Thickness:" + str(res3000.thickness))
     #Bucket at ca = 0.3
-    i = res3000.LowerBucketIndex()
+    i = res3000.LocalLowerBucketIndex()
     CaLow = res3000.Cl[i]
     errorLowerBucker = abs(CaLow - 0.3)
-    weight = 20
+    weight = 40
     Error = Error + errorLowerBucker * weight
     print("Lower Bucket " + str(CaLow))
 
     ##Now at 2000
-    foil = OptiWrapperGenerate(x,2000,alphaMin=4,alphaMax=10)
+    foil = OptiWrapperGenerate(x,2000,alphaMin=4,alphaMax=10,open=True)
     res2000 = foil.ReadResults()
     #Upper Bucker
-    i = res2000.UpperBucketIndex()
+    i = res2000.LocalUpperBucketIndex()
     CaHigh = res2000.Cl[i]
     errorUpperBucker = abs(CaHigh - 0.8)
-    weight = 20
+    weight = 40
     Error = Error + errorUpperBucker * weight
     print("Upper Bucket " + str(CaHigh))
 
@@ -116,10 +116,10 @@ def Evaluate(x):
     #high lift
     ClMax = res1000.MaxCl()
     if(ClMax < 1.5): #Non Linear punishment for underperforming
-        errorClMax = (1.5 - ClMax) * 6
+        errorClMax = (1.5 - ClMax) * 40
     else:
-        errorClMax = (1.5 - ClMax) 
-    weight = 10
+        errorClMax = (1.5 - ClMax) * 5
+    weight = 1
     Error = Error + errorClMax * weight
     print("ClMax " + str(ClMax))
     
@@ -140,20 +140,109 @@ def derivFoilEval(x,delta=[1,0.03,0.5,0.2,0.05,0.1,1,0.03,0.05,0.2,0.05,0.1]) ->
     return res
 
 
-xs = np.array([[6,0.1,8,0,0.3,0.7,3,0.15,2,0,0.3,0.7]])
+##This is very mehhh time for a custom optimizer
+#xs = np.array([[6,0.1,8,0,0.3,0.7,3,0.15,2,0,0.3,0.7]])
 
+#x0 = [6,0.1,8,0,0.3,0.7,3,0.15,2,0,0.3,0.7]
 
-x0 = [6,0.1,8,0,0.3,0.7,3,0.15,2,0,0.3,0.7]
+#bounds = Bounds([3, 0, 3, -5 ,0.3 ,0,0,0,-2,-5,0.3,0], [20, 1, 20, 5 , 1, 1.2, 6, 1, 5, 5, 1, 1])
 
-bounds = Bounds([3, 0, 3, -5 ,0.3 ,0,0,0,-2,-5,0.3,0], [20, 1, 20, 5 , 1, 1.2, 6, 1, 5, 5, 1, 1])
-
-linear_constraint = LinearConstraint([[0, 0, 1, 0, 0, 0, 0, 0, -1, 0, 0, 0]], [0],[np.inf])
+#linear_constraint = LinearConstraint([[0, 0, 1, 0, 0, 0, 0, 0, -1, 0, 0, 0]], [0],[np.inf])
 
 #deleted min denominator
-res = minimize(Evaluate, x0, method='trust-constr',  jac=derivFoilEval, hess=SR1(min_denominator=0.05),constraints=[linear_constraint],options={'verbose': 0,"maxiter":25,"initial_tr_radius":1}, bounds=bounds)
+#res = minimize(Evaluate, x0, method='trust-constr',  jac=derivFoilEval, hess=SR1(min_denominator=0.05),constraints=[linear_constraint],options={'verbose': 0,"maxiter":25,"initial_tr_radius":1}, bounds=bounds)
 
-print(res)
+#print(res)
 
-OptiWrapperGenerate(res.x,3000,open=True)
+#OptiWrapperGenerate(res.x,3000,open=True)
 
+def singleChangeOptimizer(Eval,upperBounds,lowerBounds,iniGuess,iniStepSize,maxIter = 30):
+    #Eval is function that we minimize
+    #upper/lowerBounds are the bounds of the variables
+    #iniGuess is the first guess for the Variables
+    #iniStepSize is the initial step size
+    
+    n = len(upperBounds)
+    iter = 0
 
+    if(n != len(lowerBounds) or n != len(iniGuess) or n != len(iniStepSize)):
+        print("Unput sizes dont match")
+        return -1
+    
+    delta = np.ones(n)*99999 #delta is how much the error changed with the last change of this variable (normalized) with iniStepSize
+    multiplier = np.ones(n)         #multiplier for the delta
+    direction = np.ones(n)           #direction of the last step where error decreased
+
+    stepSize = iniStepSize
+    guess = iniGuess
+    currentError = Eval(guess)
+
+    targetStep = 1          #wir versuchen error um 1 zu ändern
+
+    while(iter < maxIter):
+        iter = iter+1
+
+        print(currentError)
+
+        #if(iter == n + 1):  #reselt multiplieres after first initial runn
+         #   multiplier = np.ones(n)
+        #for now we wana just do one after the other
+        if(iter % n == 0):
+            delta = np.ones(n)*99999 #delta is how much the error changed with the last change of this variable (normalized) with iniStepSize
+            multiplier = np.ones(n)
+
+        change = np.multiply(delta,multiplier)
+        i = np.argmax(change,axis=None) #finde which change will probably be most effective
+        #increse multiplier of all the others
+        multiplier = np.add(multiplier,np.ones(n))
+        multiplier[i] = 1
+
+        #first step according to direction
+        _guess = guess
+        _guess[i] = _guess[i] + direction[i] * stepSize[i]
+
+        #check constraints
+        if(_guess[i] < lowerBounds[i]):
+            _guess[i] = lowerBounds[i]
+        elif(_guess[i] > upperBounds[i]):
+            _guess[i] = upperBounds[i]
+
+        _Error1 = Eval(_guess)
+        if(_Error1 < currentError):
+            delta[i] = abs(currentError - _Error1)
+            currentError = _Error1
+            guess = _guess
+            #adapt stepsize so we move 1
+            stepSize[i] = targetStep * stepSize[i] / delta[i]
+            continue
+        else:   #try other direction
+            _guess[i] = _guess[i] - 2 * direction[i] * stepSize[i]
+            _Error = Eval(_guess)
+            if(_Error < currentError):
+                delta[i] = abs(currentError - _Error)
+                currentError = _Error
+                direction[i] = -1 * direction[i]
+                stepSize[i] = targetStep * stepSize[i] / delta[i]
+                guess = _guess
+                continue
+            else:
+                _delta = abs(_Error1 - _Error)
+
+                stepSize[i] = targetStep * 2 * stepSize[i] / delta[i]
+
+                delta[i] = 0   #punishment, since we dont improve
+    print("Final best Error:" + str(currentError))
+    return guess
+
+#aLamT,startBlendT,LeT,dLeT,recTop,strengthRecTop,aLamB,startBlendB,LeB,dLeB,recBot,strengthRecBot
+customGuess = [8/0.11,0.1,12,0,0.2,0.7,3,0.15,2,0,0.3,0.7]
+upperBounds = [20, 0.35, 20, 5 , 0.9, 1.2, 6, 0.35, 4.5, 5, 1, 1]
+lowerBounds = [3, 0.01, 5, -5 ,0.4 ,0,0,0.02,-2,-5,0.4,0]
+iniGuess = [6,0.1,8,0,0.7,0.7,3,0.15,2,0,0.7,0.7]
+iniStepSize = [1,0.1,1,0.5,0.2,0.2,1,0.1,0.5,0.5,0.2,0.2]
+#bounds = Bounds([3, 0, 3, -5 ,0.3 ,0,0,0,-2,-5,0.3,0], [20, 1, 20, 5 , 1, 1.2, 6, 1, 5, 5, 1, 1])
+
+#res = singleChangeOptimizer(Evaluate,upperBounds,lowerBounds,iniGuess,iniStepSize,maxIter=100)
+#OptiWrapperGenerate(res,3000,open=True,num=7)
+foil = OptiWrapperGenerate(iniGuess,3000,alphaMin=0,alphaMax=5,open=True)
+self = foil.ReadResults()
