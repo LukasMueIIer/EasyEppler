@@ -144,8 +144,8 @@ def derivFoilEval(x,delta=[1,0.03,0.5,0.2,0.05,0.1,1,0.03,0.05,0.2,0.05,0.1]) ->
 xs = np.array([[6,0.1,8,0,0.7,0.7,3,0.15,2,0,0.7,0.7]])
 
 x0 = [6,0.1,8,0,0.7,0.7,3,0.15,2,0,0.7,0.7]
-
-bounds = Bounds([3, 0, 3, -5 ,0.3 ,0,0,0,-2,-5,0.3,0], [20, 1, 20, 5 , 1, 1.2, 6, 1, 5, 5, 1, 1])
+#aLamT,startBlendT,LeT,dLeT,recTop,strengthRecTop,aLamB,startBlendB,LeB,dLeB,recBot,strengthRecBot
+bounds = Bounds([3, 0.02, 3, -5 ,0.35 ,0,0,0.02,-2,-5,0.35,0], [10, 0.3, 20, 5 , 0.9, 1, 6, 0.3, 5, 5, 0.9, 1])
 
 linear_constraint = LinearConstraint([[0, 0, 1, 0, 0, 0, 0, 0, -1, 0, 0, 0]], [0],[np.inf])
 
