@@ -3,6 +3,11 @@ import aerosandbox.numpy as np
 import EpplerFoil
 import matplotlib.pyplot as plt
 
+from scipy.optimize import minimize
+from scipy.optimize import Bounds
+from scipy.optimize import LinearConstraint
+from scipy.optimize import SR1
+
 def funcFit(x0,Fx0,dFx0,ddFx0,x1,Fx1,dFx1,x):
     opti = asb.Opti() #erstellt optimizer environment
 
@@ -27,7 +32,7 @@ def funcFit(x0,Fx0,dFx0,ddFx0,x1,Fx1,dFx1,x):
     opti.subject_to(df(x1,a,b,c,d,e) == (dFx1))
  
 
-    sol = opti.solve()
+    sol = opti.solve(verbose=False)
     a = sol.value(a)
     b = sol.value(b)
     c = sol.value(c)
@@ -40,7 +45,7 @@ def funcFit(x0,Fx0,dFx0,ddFx0,x1,Fx1,dFx1,x):
 
     return res
 
-def GenerateFoil(aLamT,startBlendT,LeT,dLeT,recTop,strengthRecTop,aLamB,startBlendB,LeB,dLeB,recBot,strengthRecBot,RE=3000,open=False,num=7) -> EpplerFoil.AirFoil:
+def GenerateFoil(aLamT,startBlendT,LeT,dLeT,recTop,strengthRecTop,aLamB,startBlendB,LeB,dLeB,recBot,strengthRecBot,RE=3000,open=False,num=7,alphaMin=0,alphaMax=17) -> EpplerFoil.AirFoil:
     foil = EpplerFoil.AirFoil("entwurf.dat","AO",12,_N = 60, _ZeroN = 31)
     foil.BeginnFile()
 
@@ -64,7 +69,7 @@ def GenerateFoil(aLamT,startBlendT,LeT,dLeT,recTop,strengthRecTop,aLamB,startBle
     #Calculations
     foil.inviscidCalc_byIncrements(0,3,5)
     foil.naturalTransitionCalc(RE)
-    foil.visousCalcNoDecimals(0,17,18)
+    foil.visousCalc(alphaMin,alphaMax,15)
     foil.CloseFile()
     if(open):
         foil.ExecuteAndOpen()
@@ -72,15 +77,13 @@ def GenerateFoil(aLamT,startBlendT,LeT,dLeT,recTop,strengthRecTop,aLamB,startBle
         foil.Execute()
     return foil
 
-def OptiWrapperGenerate(x,RE,open=False,num=7):
-    return GenerateFoil(x[0],x[1],x[2],x[3],x[4],x[5],x[6],x[7],x[8],x[9],x[10],x[11],RE=RE,open=open,num=num)
-
-OptiWrapperGenerate([6,0.1,8,0,0.3,0.7,3,0.15,2,0,0.3,0.7],RE=3000,open=True,num=7)
-
+def OptiWrapperGenerate(x,RE,open=False,num=7,alphaMin=0,alphaMax=17):
+    print(x)
+    return GenerateFoil(x[0],x[1],x[2],x[3],x[4],x[5],x[6],x[7],x[8],x[9],x[10],x[11],RE=RE,open=open,num=num,alphaMin=alphaMin,alphaMax=alphaMax)
 
 def Evaluate(x):
     ##We evaluate for multiple RE numbers starting with 3000
-    foil = OptiWrapperGenerate(x,3000)
+    foil = OptiWrapperGenerate(x,3000,alphaMin=0,alphaMax=5)
     res3000 = foil.ReadResults()
     #Thickness
     targThick = 15
@@ -97,7 +100,7 @@ def Evaluate(x):
     print("Lower Bucket " + str(CaLow))
 
     ##Now at 2000
-    foil = OptiWrapperGenerate(x,2000)
+    foil = OptiWrapperGenerate(x,2000,alphaMin=4,alphaMax=10)
     res2000 = foil.ReadResults()
     #Upper Bucker
     i = res2000.UpperBucketIndex()
@@ -108,7 +111,7 @@ def Evaluate(x):
     print("Upper Bucket " + str(CaHigh))
 
     #Now at 1000
-    foil = OptiWrapperGenerate(x,1000)
+    foil = OptiWrapperGenerate(x,1000,alphaMin=6,alphaMax=17)
     res1000 = foil.ReadResults()
     #high lift
     ClMax = res1000.MaxCl()
@@ -123,3 +126,34 @@ def Evaluate(x):
     print("Error: " + str(Error))
 
     return Error
+
+def derivFoilEval(x,delta=[1,0.03,0.5,0.2,0.05,0.1,1,0.03,0.05,0.2,0.05,0.1]) -> float: #scyPy takes way to small steps that get removed in eppler rounding
+    res = np.zeros(len(x))
+    for i in range(0,len(x)): #we use centrall diff approach
+        _x = x
+        _x[i] = _x[i] + 0.5 * delta[i]
+        UpScore = Evaluate(_x)
+        _x[i] = _x[i] - 0.5 * delta[i]
+        LowScore = Evaluate(_x)
+        res[i] = (UpScore - LowScore)/delta[i]
+    print(res)
+    return res
+
+
+xs = np.array([[6,0.1,8,0,0.3,0.7,3,0.15,2,0,0.3,0.7]])
+
+
+x0 = [6,0.1,8,0,0.3,0.7,3,0.15,2,0,0.3,0.7]
+
+bounds = Bounds([3, 0, 3, -5 ,0.3 ,0,0,0,-2,-5,0.3,0], [20, 1, 20, 5 , 1, 1.2, 6, 1, 5, 5, 1, 1])
+
+linear_constraint = LinearConstraint([[0, 0, 1, 0, 0, 0, 0, 0, -1, 0, 0, 0]], [0],[np.inf])
+
+#deleted min denominator
+res = minimize(Evaluate, x0, method='trust-constr',  jac=derivFoilEval, hess=SR1(min_denominator=0.05),constraints=[linear_constraint],options={'verbose': 0,"maxiter":25,"initial_tr_radius":1}, bounds=bounds)
+
+print(res)
+
+OptiWrapperGenerate(res.x,3000,open=True)
+
+

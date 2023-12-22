@@ -45,7 +45,8 @@ class CalculationRes: #Class that holds results from viscous calculation
             else:
                 dcd = _dcd
                 i = i + 1
-            if(i == (len(self.Cd - 2))):
+            if(i > (len(self.Cd) - 3)):
+                print("Limit reached")
                 itter = False
         return i
 
@@ -61,7 +62,7 @@ class CalculationRes: #Class that holds results from viscous calculation
             else:
                 dcd = _dcd
                 i = i - 1
-            if(i == (len(self.Cd - 1))):
+            if(i == (len(self.Cd) - 1)):
                 itter = False
                 i = 0
         return i
