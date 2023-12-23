@@ -7,6 +7,7 @@ from scipy.optimize import minimize
 from scipy.optimize import Bounds
 from scipy.optimize import LinearConstraint
 from scipy.optimize import SR1
+import casadi as cas
 
 def funcFit(x0,Fx0,dFx0,ddFx0,x1,Fx1,dFx1,x):
     opti = asb.Opti() #erstellt optimizer environment
@@ -127,6 +128,39 @@ def Evaluate(x):
 
     return Error
 
+def EvaluateVec(x): #returns the current evaluation vector
+    res = np.zeros(4) #our vector has 4 entries
+    ##We evaluate for multiple RE numbers starting with 3000
+    foil = OptiWrapperGenerate(x,3000,alphaMin=0,alphaMax=5,open=True)
+    res3000 = foil.ReadResults()
+    #Thickness
+    print("Thickness:" + str(res3000.thickness))
+    res[0] = res3000.thickness
+    #Bucket at ca = 0.3
+    i = res3000.LowerBucketIndex()
+    CaLow = res3000.Cl[i]
+    res[1] = CaLow
+    print("Lower Bucket " + str(CaLow))
+
+    ##Now at 2000
+    foil = OptiWrapperGenerate(x,2000,alphaMin=4,alphaMax=10,open=True)
+    res2000 = foil.ReadResults()
+    #Upper Bucker
+    i = res2000.UpperBucketIndex()
+    CaHigh = res2000.Cl[i]
+    res[2] = CaHigh
+    print("Upper Bucket " + str(CaHigh))
+
+    #Now at 1000
+    foil = OptiWrapperGenerate(x,1000,alphaMin=6,alphaMax=17)
+    res1000 = foil.ReadResults()
+    #high lift
+    ClMax = res1000.MaxCl()
+    res[3] = ClMax 
+    print("ClMax " + str(ClMax))
+    
+    return res
+
 def derivFoilEval(x,delta=[1,0.03,0.5,0.2,0.05,0.1,1,0.03,0.05,0.2,0.05,0.1]) -> float: #scyPy takes way to small steps that get removed in eppler rounding
     res = np.zeros(len(x))
     for i in range(0,len(x)): #we use centrall diff approach
@@ -139,123 +173,62 @@ def derivFoilEval(x,delta=[1,0.03,0.5,0.2,0.05,0.1,1,0.03,0.05,0.2,0.05,0.1]) ->
     print(res)
     return res
 
+def VectorwiseOptimizer(Eval,target,lowerBounds,upperBounds,iniGuess,relaxation,gradientStepSize,maxIterations = 10): #BOUNDS MUST FULLFILL REQUIREMENTS FROM EPPLER CODE
+    currEval = Eval(iniGuess)
+    currGuess = iniGuess
+    iter = True
+    iterCount = 0
+    n = len(iniGuess)
+    while(iter):
+        iter = iterCount + 1
+        if(iter >= maxIterations):
+            iter = False
+            continue
+        #Build gradient
+        gradMatrix = np.zeros((len(target),n)).T
+        for i in range(0,n):    #for performance now one sided derivative
+            derivGuess = np.copy(currGuess)
+            derivGuess[i] = derivGuess[i] + gradientStepSize[i]
 
-##This is very mehhh time for a custom optimizer
-xs = np.array([[6,0.1,8,0,0.7,0.7,3,0.15,2,0,0.7,0.7]])
+            if(derivGuess[i] < lowerBounds[i]): #check boundaries
+                derivGuess[i] = lowerBounds[i]
+            elif(derivGuess[i] > upperBounds[i]):
+                derivGuess[i] = upperBounds[i]
+
+            #calculate derivative
+            deltaX = derivGuess[i] - currGuess[i]
+            deltaY = np.subtract(Eval(derivGuess),currEval)
+            _deriv = (1/deltaX) * deltaY
+
+            #write into Matrix
+            gradMatrix[i] = _deriv
+
+        #now solve with optimizer
+        opt = asb.Opti()
+        x = opt.variable(init_guess=np.zeros(n)) #our vector
+        opt.subject_to((currGuess + x) > lowerBounds)
+        opt.subject_to((currGuess + x) < upperBounds)
+        opt.minimize(np.sum((currEval + cas.mtimes(x.T,gradMatrix).T - target)**2)) #we minimize insted of subject
+        #TODO LIMITED MARCHING
+        res = opt.solve()
+        delta = res.value(x)
+
+        #now do the step
+        currGuess = np.add(currGuess,relaxation*delta)
+        currEval = Eval(currGuess)
+        print(currEval)
+
+    print("Final Error")
+    print(currEval)
+    return currGuess
+
+
 
 x0 = [6,0.1,8,0,0.7,0.7,3,0.15,2,0,0.7,0.7]
 #aLamT,startBlendT,LeT,dLeT,recTop,strengthRecTop,aLamB,startBlendB,LeB,dLeB,recBot,strengthRecBot
-bounds = Bounds([3, 0.02, 3, -5 ,0.35 ,0,0,0.02,-2,-5,0.35,0], [10, 0.3, 20, 5 , 0.9, 1, 6, 0.3, 5, 5, 0.9, 1])
+lowerBounds = [3, 0.02, 3, -5 ,0.35 ,0,0,0.02,-2,-5,0.68,0]
+upperBounds = [10, 0.3, 20, 5 , 0.9, 1, 6, 0.3, 5, 5, 0.72, 1]
+res = VectorwiseOptimizer(EvaluateVec,[15,0.3,0.8,1.5],lowerBounds,upperBounds,x0,0.05,[0.8,0.03,0.8,0.5,0.1,0.1,0.8,0.03,0.8,0.5,0.1,0.1],maxIterations=200)
 
-linear_constraint = LinearConstraint([[0, 0, 1, 0, 0, 0, 0, 0, -1, 0, 0, 0]], [0],[np.inf])
-
-#deleted min denominator
-res = minimize(Evaluate, x0, method='trust-constr',  jac=derivFoilEval, hess=SR1(min_denominator=0.05),constraints=[linear_constraint],options={'verbose': 0,"maxiter":25,"initial_tr_radius":1}, bounds=bounds)
-
-print(res)
-
-OptiWrapperGenerate(res.x,3000,open=True)
-
-
-
-
-def singleChangeOptimizer(Eval,upperBounds,lowerBounds,iniGuess,iniStepSize,maxIter = 30):
-    #Eval is function that we minimize
-    #upper/lowerBounds are the bounds of the variables
-    #iniGuess is the first guess for the Variables
-    #iniStepSize is the initial step size
-    
-    n = len(upperBounds)
-    iter = 0
-
-    if(n != len(lowerBounds) or n != len(iniGuess) or n != len(iniStepSize)):
-        print("Unput sizes dont match")
-        return -1
-    
-    delta = np.ones(n)*99999 #delta is how much the error changed with the last change of this variable (normalized) with iniStepSize
-    multiplier = np.ones(n)         #multiplier for the delta
-    direction = np.ones(n)           #direction of the last step where error decreased
-    Progressless = np.zeros(n)      #counts how many cicles we made no progress by moving index variable 
-    targets = [1,0.5,0.2,0.1,2,0.5,3,0.5,2,0.5,2,0.5,2,0.5,2,0.5,2,0.5,2,0.5,2,0.5,2,0.5]
-
-    stepSize = iniStepSize
-    guess = iniGuess
-    currentError = Eval(guess)
-
-    while(iter < maxIter):
-        iter = iter+1
-
-        print("Current best config with Error: " + str(currentError))
-        print(guess)
-
-        #if(iter == n + 1):  #reselt multiplieres after first initial runn
-         #   multiplier = np.ones(n)
-        #for now we wana just do one after the other
-        if(iter % n == 0):
-            delta = np.ones(n)*99999 #delta is how much the error changed with the last change of this variable (normalized) with iniStepSize
-            multiplier = np.ones(n)
-
-        change = np.multiply(delta,multiplier)
-        i = np.argmax(change,axis=None) #finde which change will probably be most effective
-        #increse multiplier of all the others
-        multiplier = np.add(multiplier,np.ones(n))
-        multiplier[i] = 1
-        targetStep = targets[int(Progressless[i])]
-
-        #first step according to direction
-        _guess = guess
-        _guess[i] = _guess[i] + direction[i] * stepSize[i]
-
-        #check constraints
-        if(_guess[i] < lowerBounds[i]):
-            _guess[i] = lowerBounds[i]
-        elif(_guess[i] > upperBounds[i]):
-            _guess[i] = upperBounds[i]
-
-        _Error1 = Eval(_guess)
-        if(_Error1 < currentError):
-            delta[i] = abs(currentError - _Error1)
-            currentError = _Error1
-            guess = _guess
-            #adapt stepsize so we move 1
-            stepSize[i] = targetStep * stepSize[i] / delta[i]
-            Progressless[i] = 0
-            continue
-        else:   #try other direction
-            _guess[i] = _guess[i] - 2 * direction[i] * stepSize[i]
-            
-            #check again for boundaries
-            if(_guess[i] < lowerBounds[i]):
-                _guess[i] = lowerBounds[i]
-            elif(_guess[i] > upperBounds[i]):
-                _guess[i] = upperBounds[i]
-            
-            _Error = Eval(_guess)
-            if(_Error < currentError):
-                delta[i] = abs(currentError - _Error)
-                currentError = _Error
-                direction[i] = -1 * direction[i]
-                stepSize[i] = targetStep * stepSize[i] / delta[i]
-                guess = _guess
-                Progressless[i] = 0
-                continue
-            else:
-                _delta = abs(_Error1 - _Error)
-
-                stepSize[i] = targetStep * 2 * stepSize[i] / delta[i]
-
-                delta[i] = 0   #punishment, since we dont improve
-                Progressless[i] = Progressless[i] + 1
-    print("Final best Error:" + str(currentError))
-    return guess
-
-#aLamT,startBlendT,LeT,dLeT,recTop,strengthRecTop,aLamB,startBlendB,LeB,dLeB,recBot,strengthRecBot
-#customGuess = [8/0.11,0.1,12,0,0.2,0.7,3,0.15,2,0,0.3,0.7]
-#upperBounds = [20, 0.35, 20, 5 , 0.9, 1.2, 6, 0.35, 4.5, 5, 1, 1]
-#lowerBounds = [3, 0.01, 5, -5 ,0.4 ,0,0,0.02,-2,-5,0.4,0]
-#iniGuess = [6,0.1,8,0,0.7,0.7,3,0.15,2,0,0.7,0.7]
-#iniStepSize = [1,0.1,1,0.5,0.2,0.2,1,0.1,0.5,0.5,0.2,0.2]
-#bounds = Bounds([3, 0, 3, -5 ,0.3 ,0,0,0,-2,-5,0.3,0], [20, 1, 20, 5 , 1, 1.2, 6, 1, 5, 5, 1, 1])
-
-#res = singleChangeOptimizer(Evaluate,upperBounds,lowerBounds,iniGuess,iniStepSize,maxIter=100)
-#OptiWrapperGenerate(res,3000,open=True,num=7)
+OptiWrapperGenerate(res,3000,open=True)
+print("TEST")

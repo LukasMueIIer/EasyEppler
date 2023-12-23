@@ -70,6 +70,8 @@ class CalculationRes: #Class that holds results from viscous calculation
     def LowerBucketIndex(self):
         #Find second central derivative
         n = len(self.Cl)
+        if(n-2 < 1):
+            return self.MinCdInd()
         dd = onp.zeros(n-2)
         for i in range(1,n-1):
             f1 = self.Cd[i-1]
