@@ -62,7 +62,7 @@ def GenerateFoil(aLamT,startBlendT,LeT,dLeT,recTop,strengthRecTop,aLamB,startBle
     y = funcFit(startBlendB,aLamB,0,0,0,LeB,dLeB,x)
     foil.WriteLowerC_Alpha(x,y)
     foil.MPRLower(recBot,0.98,0.23,strengthRecBot,mode=2)
-    foil.RampLower(0.1,0.1)
+    foil.RampLower(0.05,0.05)
 
     #Finalize
     foil.writeMPR("upper",0.4,0)
@@ -131,7 +131,7 @@ def Evaluate(x):
 def EvaluateVec(x): #returns the current evaluation vector
     res = np.zeros(4) #our vector has 4 entries
     ##We evaluate for multiple RE numbers starting with 3000
-    foil = OptiWrapperGenerate(x,3000,alphaMin=0,alphaMax=5,open=True)
+    foil = OptiWrapperGenerate(x,3000,alphaMin=0,alphaMax=5,open=False)
     res3000 = foil.ReadResults()
     #Thickness
     print("Thickness:" + str(res3000.thickness))
@@ -143,7 +143,7 @@ def EvaluateVec(x): #returns the current evaluation vector
     print("Lower Bucket " + str(CaLow))
 
     ##Now at 2000
-    foil = OptiWrapperGenerate(x,2000,alphaMin=4,alphaMax=10,open=True)
+    foil = OptiWrapperGenerate(x,2000,alphaMin=4,alphaMax=10,open=False)
     res2000 = foil.ReadResults()
     #Upper Bucker
     i = res2000.UpperBucketIndex()
@@ -222,12 +222,12 @@ def VectorwiseOptimizer(Eval,target,lowerBounds,upperBounds,iniGuess,relaxation,
     print(currEval)
     return currGuess
 
-
-
-x0 = [6,0.1,8,0,0.7,0.7,3,0.15,2,0,0.7,0.7]
+#i love u mostest hihi
+print("Lukers loves tiner mostesttttt")
+x0 = [6,0.1,8,0,0.7,0.7,3,0.15,2,0,0.705,0.7]
 #aLamT,startBlendT,LeT,dLeT,recTop,strengthRecTop,aLamB,startBlendB,LeB,dLeB,recBot,strengthRecBot
-lowerBounds = [3, 0.02, 3, -5 ,0.35 ,0,0,0.02,-2,-5,0.68,0]
-upperBounds = [10, 0.3, 20, 5 , 0.9, 1, 6, 0.3, 5, 5, 0.72, 1]
+lowerBounds = [3, 0.02, 3, -5 ,0.35 ,0,0,0.02,-2,-5,0.7,0]
+upperBounds = [10, 0.3, 20, 5 , 0.9, 1, 6, 0.3, 5, 5, 0.71, 1]
 res = VectorwiseOptimizer(EvaluateVec,[15,0.3,0.8,1.5],lowerBounds,upperBounds,x0,0.05,[0.8,0.03,0.8,0.5,0.1,0.1,0.8,0.03,0.8,0.5,0.1,0.1],maxIterations=200)
 
 OptiWrapperGenerate(res,3000,open=True)
