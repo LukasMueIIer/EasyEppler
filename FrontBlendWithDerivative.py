@@ -129,9 +129,11 @@ def Evaluate(x):
     return Error
 
 def EvaluateVec(x): #returns the current evaluation vector
+    print("EVALUATE")
+    print(x)
     res = np.zeros(4) #our vector has 4 entries
     ##We evaluate for multiple RE numbers starting with 3000
-    foil = OptiWrapperGenerate(x,3000,alphaMin=0,alphaMax=5,open=False)
+    foil = OptiWrapperGenerate(x,3000,alphaMin=0,alphaMax=5.5,open=False)
     res3000 = foil.ReadResults()
     #Thickness
     print("Thickness:" + str(res3000.thickness))
@@ -197,6 +199,8 @@ def VectorwiseOptimizer(Eval,target,lowerBounds,upperBounds,iniGuess,relaxation,
 
             #calculate derivative
             deltaX = derivGuess[i] - currGuess[i]
+            print("GUESSSS")
+            print(derivGuess)
             deltaY = np.subtract(Eval(derivGuess),currEval)
             _deriv = (1/deltaX) * deltaY
 
@@ -208,8 +212,8 @@ def VectorwiseOptimizer(Eval,target,lowerBounds,upperBounds,iniGuess,relaxation,
         x = opt.variable(init_guess=np.zeros(n)) #our vector
         opt.subject_to((currGuess + x) > lowerBounds)
         opt.subject_to((currGuess + x) < upperBounds)
+        #opt.subject_to(np.abs(x) < gradientStepSize)    #This sucks underrelaxation is the way to go
         opt.minimize(np.sum((currEval + cas.mtimes(x.T,gradMatrix).T - target)**2)) #we minimize insted of subject
-        #TODO LIMITED MARCHING
         res = opt.solve()
         delta = res.value(x)
 
@@ -222,13 +226,12 @@ def VectorwiseOptimizer(Eval,target,lowerBounds,upperBounds,iniGuess,relaxation,
     print(currEval)
     return currGuess
 
-#i love u mostest hihi
-print("Lukers loves tiner mostesttttt")
-x0 = [6,0.1,8,0,0.7,0.7,3,0.15,2,0,0.705,0.7]
+x0 = [6,0.1,8,0,0.7,0.7,3,0.15,2,0,0.75,0.7]
 #aLamT,startBlendT,LeT,dLeT,recTop,strengthRecTop,aLamB,startBlendB,LeB,dLeB,recBot,strengthRecBot
-lowerBounds = [3, 0.02, 3, -5 ,0.35 ,0,0,0.02,-2,-5,0.7,0]
-upperBounds = [10, 0.3, 20, 5 , 0.9, 1, 6, 0.3, 5, 5, 0.71, 1]
-res = VectorwiseOptimizer(EvaluateVec,[15,0.3,0.8,1.5],lowerBounds,upperBounds,x0,0.05,[0.8,0.03,0.8,0.5,0.1,0.1,0.8,0.03,0.8,0.5,0.1,0.1],maxIterations=200)
+lowerBounds = [3, 0.02, 3, -5 ,0.35 ,0,0,0.02,-2,-5,0.74,0]
+upperBounds = [10, 0.3, 20, 5 , 0.9, 1, 6, 0.3, 5, 5, 0.76, 1]
+delta = [0.8,0.03,0.8,0.05,0.1,0.1,0.8,0.03,0.8,0.05,0.1,0.1]
+res = VectorwiseOptimizer(EvaluateVec,[15,0.3,0.8,1.5],lowerBounds,upperBounds,x0,0.05,delta,maxIterations=200)
 
-OptiWrapperGenerate(res,3000,open=True)
+#OptiWrapperGenerate(x0,3000,open=True)
 print("TEST")

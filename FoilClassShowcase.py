@@ -68,5 +68,5 @@ foil1.visousCalc(0,15,15)
 foil1.CloseFile()
 
 #Now run the Eppler Code with the created file
-foil1.ExecuteAndOpen()
+foil1.ExecuteAndOpen(verbose=True) #is verbose true then the terminal output of the eppler code will be printed
 

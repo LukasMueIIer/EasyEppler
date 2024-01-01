@@ -389,25 +389,34 @@ class AirFoil:
         self.File.close()
         return 0
 
-    def Execute(self) -> int:
+    def Execute(self,verbose=False) -> int:
         import os
         from subprocess import Popen, PIPE, call
 
         if(os.system("del druck.pdf")):
             print("WARNING couldnt run delet command of old PDF !!!!!")
 
-        if(os.system("echo " + self.FileName + " |prehb15.exe")):
-            print("WARNING couldnt execute eppler code !!!!!")
+        ## if(os.system("echo " + self.FileName + " |prehb15.exe")):
+        ##    print("WARNING couldnt execute eppler code !!!!!")
+        #changing to subprocess
+        p = Popen(['prehb15.exe'], stdout=PIPE, stdin=PIPE, stderr=PIPE)
+        command = self.FileName
+        stdout_data = p.communicate(input=command.encode('utf-8'))[0]
+        if(verbose):
+            print(stdout_data)
+        return 0
 
-    def ExecuteAndOpen(self) -> int: #execute the Eppler Code !this requires ghost script, freePDF and propper file placement -> read in README.md
+
+    def ExecuteAndOpen(self,verbose=False) -> int: #execute the Eppler Code !this requires ghost script, freePDF and propper file placement -> read in README.md
         #only required to execute eppler
         import os
         from subprocess import Popen, PIPE, call
-        self.Execute()
+        self.Execute(verbose)
         p = Popen(['pprs.exe'], stdout=PIPE, stdin=PIPE, stderr=PIPE)
         command = "N\n0\n1\n-1"
         stdout_data = p.communicate(input=command.encode('utf-8'))[0]
-        print(stdout_data)
+        if(verbose):
+            print(stdout_data)
 
         if(os.system("move druck druck.ps")):
             print("WARNING couldnt coppy and rename file !!!!!")
@@ -417,6 +426,7 @@ class AirFoil:
         if(os.system("ps2pdf druck.ps " + filename + ".pdf")):
             print("WARNING couldnt convert to PDF !!!!!")
         os.system(filename + ".pdf")
+        return 0
 
     def ReadResults(self) -> CalculationRes:
         resName = self.FileName[:-3] + "l"
